@@ -15,9 +15,10 @@ def load_image(path):
     return imread(path)
 
 def preprocess(image, target_size=(256, 256), augmentation=True, mask=None,
-               zero_center=False, scale=1., dim_ordering='th', **kwargs):
+               zero_center=False, scale=1., dim_ordering='th', 
+               to_bgr=False, flip=False, shift_x=0, shift_y=0, rot_range=0):
     """
-    Preprocess an image, possibly with random augmentation and
+    Preprocess an image, possibly with random augmentations and
     a mask with the same augmentations
 
     # Params
@@ -29,6 +30,7 @@ def preprocess(image, target_size=(256, 256), augmentation=True, mask=None,
     - zero_center : zero center the image (naively)
     - scale : multiply each pixel value in the image by this value
     - dim_ordering : if 'th', transpose image to (channel, height, width)
+    - to_bgr : conver the image to BGR colorspace
     - flip : if True 50% chance of flipping the image horizontally
     - shift_x : randomly shift the image by this amount 
                 in pixels horizontally [-shift_x, shift_x]
@@ -43,14 +45,12 @@ def preprocess(image, target_size=(256, 256), augmentation=True, mask=None,
     """
     cv2_imsize = (target_size[1], target_size[0])
     image = cv2.resize(image, cv2_imsize, interpolation=cv2.INTER_LINEAR)
+    if to_bgr:
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     if mask is not None:
         mask = cv2.resize(mask, cv2_imsize, interpolation=cv2.INTER_LINEAR)
 
     if augmentation:
-        flip = kwargs.get('flip', True)
-        shift_x = kwargs.get('shift_x', 0)
-        shift_y = kwargs.get('shift_y', 0)
-        rot = kwargs.get('rot_range', 0)
         # flip
         if flip and np.random.randint(2) == 1:
             image = np.fliplr(image)
@@ -66,7 +66,7 @@ def preprocess(image, target_size=(256, 256), augmentation=True, mask=None,
             mask = cv2.warpAffine(mask, M, cv2_imsize)
         
         # rotate
-        rot = np.random.uniform(-rot, rot + 1)
+        rot = np.random.uniform(-rot_range, rot_range)
         # rotate wrt center
         M = cv2.getRotationMatrix2D((cv2_imsize[0]/2, cv2_imsize[1]/2), rot, 1)
         image = cv2.warpAffine(image, M, cv2_imsize)
