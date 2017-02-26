@@ -2,6 +2,8 @@ import json
 from collections import defaultdict
 import os
 import glob
+import skimage.morphology as morph
+import numpy as np
 
 def get_bounding_boxes(bbox_folder):
     """
@@ -16,6 +18,8 @@ def get_bounding_boxes(bbox_folder):
     """
     bboxes = defaultdict(list)
     file_paths = glob.glob(os.path.join(bbox_folder, '*.json'))
+    if len(file_paths) == 0:
+        raise ValueError('No boundingboxes found in %s' % bbox_folder)
     for file_path in file_paths:
         with open(file_path) as file:
             data = json.load(file)
@@ -30,3 +34,37 @@ def get_bounding_boxes(bbox_folder):
                             annot['class'])
                     bboxes[img_name].append(bbox)
     return bboxes
+
+def bbox_from_segmentation(segm, threshold=0.9):
+    """
+    Find a bounding box around the largest connected
+    component in a thresholded segmentation
+
+    # Params
+    - segm : segmentation of shape (height, width)
+    - threshold : threshold to apply to the segmentation
+    
+    # Returns
+    - x, y, width, height bounding box coordinates
+    """
+    segm = segm > threshold
+    labels, num_labels = morph.label(segm, return_num=True)
+    if num_labels == 0:
+        # no bounding box found
+        return
+    
+    # Zero is background, so we ignore it
+    # But we do have to +1 to negate this after argmax
+    largest = np.argmax([np.sum(labels == label)
+                            for label in range(1, num_labels+1)])
+    segm = labels == largest + 1
+
+    # we find the top-left coordinate by finding the first
+    # column and row with a 1
+    x1 = np.argmax(np.max(segm, axis=0))
+    y1 = np.argmax(np.max(segm, axis=1))
+    # The bottom-right coordinate is found by 
+    x2 = segm.shape[1] - np.argmax(np.max(np.fliplr(segm), axis=0))
+    y2 = segm.shape[0] - np.argmax(np.max(np.flipud(segm), axis=1))
+
+    return x1, y1, x2-x1, y2-y1
