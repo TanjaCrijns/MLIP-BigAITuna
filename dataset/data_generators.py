@@ -23,6 +23,7 @@ def get_data(data_df, data_folder, batch_size=32, shuffle=True,
 
     # Returns
     - batch of images (batch_size, 3, img_size[0], img_size[1])
+    - batch of labels (batch_size, len(labels))
     """
     n_classes = len(labels)
     
@@ -53,6 +54,33 @@ def get_data(data_df, data_folder, batch_size=32, shuffle=True,
                 label_batch[j] = onehot(labels.index(label), 8)
                 i += 1
             yield img_batch, label_batch
+
+def get_test_data(files, batch_size=4, img_size=(720, 1280)):
+    """
+    Generator for test data
+
+    # Params
+    - files : list of files (e.g., output of glob)
+    - batch_size : number of images per batch
+    - img_size : size to resize images to (height, width)
+
+    # Returns
+    - batches of (batch_size, 3, img_size[0], img_size[1])
+    """
+    i = 0
+    n = len(files)
+    # cycle to avoid batches not lining up with dataset size
+    files = files + files
+    while True:
+        batch = np.zeros((batch_size, 3, ) + img_size)
+        for j in range(batch_size):
+            img = load_image(files[i + j])
+            img = preprocess(img, target_size=img_size, augmentation=False, 
+                             zero_center=True, scale=1./255.)
+            batch[j] = img
+            i = (i + 1) % n
+        yield batch
+            
 
 def get_data_with_masks(data_df, bboxes, data_folder, batch_size=1,
                         shuffle=True, augmentation=True, img_size=(256, 256),
@@ -147,5 +175,5 @@ def get_data_with_masks(data_df, bboxes, data_folder, batch_size=1,
                 mask_batch[j] = mask
                 label_batch[j] = onehot(labels.index(label), 8)
                 i += 1
-            # yield img_batch, [label_batch, mask_batch]
-            yield img_batch, mask_batch
+            yield img_batch, [label_batch, mask_batch]
+            # yield img_batch, mask_batch
