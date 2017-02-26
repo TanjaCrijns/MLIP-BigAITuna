@@ -48,7 +48,7 @@ def preprocess(image, target_size=(256, 256), augmentation=True, mask=None,
     if to_bgr:
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     if mask is not None:
-        mask = cv2.resize(mask, cv2_imsize, interpolation=cv2.INTER_LINEAR)
+        mask = cv2.resize(mask, cv2_imsize, interpolation=cv2.INTER_NEAREST)
 
     if augmentation:
         # flip
@@ -64,7 +64,7 @@ def preprocess(image, target_size=(256, 256), augmentation=True, mask=None,
         image = cv2.warpAffine(image, M, cv2_imsize)
         if mask is not None:
             mask = cv2.warpAffine(mask, M, cv2_imsize)
-        
+
         # rotate
         rot = np.random.uniform(-rot_range, rot_range)
         # rotate wrt center
@@ -79,8 +79,10 @@ def preprocess(image, target_size=(256, 256), augmentation=True, mask=None,
 
     if dim_ordering == 'th':
         image = image.transpose(2, 0, 1)
+        if mask is not None:
+            mask = mask.transpose(2, 0, 1)
 
     if mask is not None:
         return image, mask
-    
+
     return image
