@@ -27,12 +27,16 @@ class ShowSegmentation(Callback):
     def on_epoch_end(self, epoch, logs):
         i = 0
         for img_batch, y_batch in self.data_gen:
-            for img, y in zip(img_batch, y_batch):
-                if type(y) is tuple:
-                    label, mask = y
-                else:
-                    label = None
-                    mask = y
+            if type(y_batch) in [tuple, list]:
+                    labels, masks = y_batch
+            else:
+                masks = y_batch
+                labels = None
+
+            for j in range(len(img_batch)):
+                img = img_batch[j]
+                mask = masks[j]
+                label = labels[j] if labels is not None else None
                 plt.figure(figsize=(13, 7))
                 plt.subplot(131)
                 plt.title('Input patch')
@@ -46,11 +50,11 @@ class ShowSegmentation(Callback):
                 plt.title('Segmentation')
                 batch_img = np.expand_dims(img, 0)
                 pred = self.model.predict(batch_img, verbose=0)
-                if type(pred) is tuple:
+                if type(pred) in [tuple, list]:
                     pred, segm = pred
                 else:
                     segm = pred
-                plt.imshow(segm[0, 1])
+                plt.imshow(segm[0, 1], vmin=0, vmax=1)
                 plt.show()
 
                 if label is not None:
