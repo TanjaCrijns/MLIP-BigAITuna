@@ -2,8 +2,14 @@ import json
 from collections import defaultdict
 import os
 import glob
+
 import skimage.morphology as morph
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+import cv2
+
+from preprocess import load_image
 
 def get_bounding_boxes(bbox_folder):
     """
@@ -68,3 +74,42 @@ def bbox_from_segmentation(segm, threshold=0.9):
     y2 = segm.shape[0] - np.argmax(np.max(np.flipud(segm), axis=1))
 
     return x1, y1, x2-x1, y2-y1
+
+def visualize_bbox(img, bounding_box, segm=None, img_size=(1280, 720)):
+    """
+    Visualize a bounding box in an image with optional segmentation
+
+    # Params:
+    - img: string of the filepath or numpy array
+    - bounding_box: (x, y, width, height) or None
+    - segm: numpy array of segmentation, same size as image
+    - img_size: if a path is given for the image, the image will
+                be resize to this (width, height)
+    """
+    if isinstance(img, basestring):
+        img = load_image(img)
+        img = cv2.resize(img, (1280, 720), 
+                         interpolation=cv2.INTER_LINEAR)
+    
+    plt.figure(figsize=(10, 7))
+    plt.imshow(img)
+    if segm is not None:
+        plt.imshow(segm, alpha=0.5)
+    
+    if bounding_box is not None:
+        (x, y, width, height) = bounding_box
+        ax = plt.gca()
+        ax.add_patch(
+            Rectangle(
+                (x, y),
+                width,
+                height,
+                fill=False,
+                edgecolor='red',
+                linewidth=3
+            )
+        )
+    else:
+        print 'No bounding box'
+    plt.show()
+    
