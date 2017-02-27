@@ -41,7 +41,7 @@ def get_bounding_boxes(bbox_folder):
                     bboxes[img_name].append(bbox)
     return bboxes
 
-def bbox_from_segmentation(segm, threshold=0.9):
+def bbox_from_segmentation(segm, threshold=0.9, padding=0):
     """
     Find a bounding box around the largest connected
     component in a thresholded segmentation
@@ -49,7 +49,8 @@ def bbox_from_segmentation(segm, threshold=0.9):
     # Params
     - segm : segmentation of shape (height, width)
     - threshold : threshold to apply to the segmentation
-    
+    - padding : pad the box by this amount of pixels on each side
+
     # Returns
     - x, y, width, height bounding box coordinates
     """
@@ -72,6 +73,10 @@ def bbox_from_segmentation(segm, threshold=0.9):
     # The bottom-right coordinate is found by 
     x2 = segm.shape[1] - np.argmax(np.max(np.fliplr(segm), axis=0))
     y2 = segm.shape[0] - np.argmax(np.max(np.flipud(segm), axis=1))
+
+    # Pad the box if possible
+    x1, y1 = max(0, x1-padding), max(0, y1-padding)
+    x2, y2 = min(segm.shape[1], x1+padding), min(segm.shape[0], y2+padding)
 
     return x1, y1, x2-x1, y2-y1
 
