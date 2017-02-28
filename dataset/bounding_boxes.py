@@ -76,7 +76,7 @@ def bbox_from_segmentation(segm, threshold=0.9, padding=0):
 
     # Pad the box if possible
     x1, y1 = max(0, x1-padding), max(0, y1-padding)
-    x2, y2 = min(segm.shape[1], x1+padding), min(segm.shape[0], y2+padding)
+    x2, y2 = min(segm.shape[1], x2+padding), min(segm.shape[0], y2+padding)
 
     return x1, y1, x2-x1, y2-y1
 
@@ -93,7 +93,7 @@ def visualize_bbox(img, bounding_box, segm=None, img_size=(1280, 720)):
     """
     if isinstance(img, basestring):
         img = load_image(img)
-        img = cv2.resize(img, (1280, 720), 
+        img = cv2.resize(img, img_size, 
                          interpolation=cv2.INTER_LINEAR)
     
     plt.figure(figsize=(10, 7))
@@ -118,3 +118,21 @@ def visualize_bbox(img, bounding_box, segm=None, img_size=(1280, 720)):
         print 'No bounding box'
     plt.show()
     
+def get_largest_bbox(bboxes):
+    """
+    Get the largest bbox from a list of bboxes
+    """
+    sq_size = [width*height for _, _, width, height, _ in bboxes]
+    return bboxes[np.argmax(sq_size)]
+
+def largest_bbox_per_image(bboxes):
+    """
+    Only keep the largest bbox per image
+
+    # Params
+    - bboxes : dictionary of img_name -> list of bboxes
+
+    # Returns:
+    Same as input, but with only 1 bbox
+    """
+    return {k:get_largest_bbox(v) for k, v in bboxes.iteritems()}
