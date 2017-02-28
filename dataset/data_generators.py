@@ -5,6 +5,7 @@ from keras.utils.np_utils import to_categorical as onehot
 
 from preprocess import *
 from dataset import labels
+from bounding_boxes import bbox_from_segmentation
 
 def get_data(data_df, data_folder, batch_size=32, shuffle=True, 
              augmentation=True, img_size=(256, 256), **kwargs):
@@ -55,7 +56,7 @@ def get_data(data_df, data_folder, batch_size=32, shuffle=True,
                 i += 1
             yield img_batch, label_batch
 
-def get_test_data(files, batch_size=4, img_size=(720, 1280)):
+def get_test_data(files, batch_size=4, img_size=(720, 1280), **kwargs):
     """
     Generator for test data
 
@@ -63,6 +64,7 @@ def get_test_data(files, batch_size=4, img_size=(720, 1280)):
     - files : list of files (e.g., output of glob)
     - batch_size : number of images per batch
     - img_size : size to resize images to (height, width)
+    - kwargs : passed to the preprocess function
 
     # Returns
     - batches of (batch_size, 3, img_size[0], img_size[1])
@@ -72,11 +74,11 @@ def get_test_data(files, batch_size=4, img_size=(720, 1280)):
     # cycle to avoid batches not lining up with dataset size
     files = files + files
     while True:
-        batch = np.zeros((batch_size, 3, ) + img_size)
+        batch = np.zeros((batch_size, 3) + img_size)
         for j in range(batch_size):
             img = load_image(files[i + j])
             img = preprocess(img, target_size=img_size, augmentation=False, 
-                             zero_center=True, scale=1./255.)
+                             zero_center=True, scale=1./255., **kwargs)
             batch[j] = img
             i = (i + 1) % n
         yield batch
@@ -177,3 +179,61 @@ def get_data_with_masks(data_df, bboxes, data_folder, batch_size=1,
                 i += 1
             yield img_batch, [label_batch, mask_batch]
             # yield img_batch, mask_batch
+
+def get_data_with_bbox_coords(data_df, data_folder, bboxes, batch_size=32, shuffle=True, 
+                              augmentation=True, img_size=(256, 256), **kwargs):
+    """
+    Generator to train a model on images.
+    Images which don't have a bounding box are simply skipped.
+
+    # Params
+    - data_df : DataFrame of filename and label for each image
+    - data_folder : folder where data resides. Should have structure
+                    `data_folder/label/img_name`
+    - batch_size : number of images per batch
+    - shuffle : present images in random order (each epoch)
+    - augmentation : perform data augmentation
+    - img_size : sample patches of this size from the image and mask
+    - kwargs : passed to the preprocess function
+
+    # Returns
+    - batch of images (batch_size, 3, img_size[0], img_size[1])
+    - batch of labels (batch_size, len(labels))
+    """
+    n_coords = 4
+    
+    while True:
+        data = zip(data_df.filename.values, data_df.label.values)
+        data = [(img, label) for img, label in data if img in bboxes]
+        n = len(data)
+        if shuffle:
+            data = np.random.permutation(data)
+        data = list(data)
+
+        # Double to allow for larger batch sizes
+        data += data
+        i = 0
+        while i < n:
+            img_batch = np.zeros((batch_size, 3) + img_size, dtype=np.float32)
+            label_batch = np.zeros((batch_size, n_coords), dtype=np.int32)
+            for j in range(batch_size):
+                img_name, label = data[i + j]
+                img_path = os.path.join(data_folder, label, img_name)
+                img = load_image(img_path)
+                
+                x, y, width, height = bboxes[img_name]
+
+                # Make a mask from the bounding box, so we can apply
+                # data augmentation to it. Later we will convert it back
+                mask = np.zeros(img.shape[:2], dtype=np.uint8)
+                mask[y:y+height, x:x+width] = 1
+
+                img, mask = preprocess(img, target_size=img_size,
+                                       augmentation=augmentation,
+                                       zero_center=True, scale=1./255.,
+                                       mask=mask, **kwargs)
+                
+                img_batch[j] = img
+                label_batch[j] = bbox_from_segmentation(mask)
+                i += 1
+            yield img_batch, label_batch

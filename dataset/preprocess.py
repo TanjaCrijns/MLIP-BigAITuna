@@ -79,7 +79,7 @@ def preprocess(image, target_size=(256, 256), augmentation=True, mask=None,
 
     if dim_ordering == 'th':
         image = image.transpose(2, 0, 1)
-        if mask is not None:
+        if mask is not None and mask.ndim == 3:
             mask = mask.transpose(2, 0, 1)
 
     if mask is not None:
