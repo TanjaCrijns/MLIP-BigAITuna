@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import cv2
+from scipy.ndimage.measurements import center_of_mass
 
 from preprocess import load_image
 
@@ -41,7 +42,7 @@ def get_bounding_boxes(bbox_folder):
                     bboxes[img_name].append(bbox)
     return bboxes
 
-def bbox_from_segmentation(segm, threshold=0.9, padding=0):
+def bbox_from_segmentation(segm, threshold=0.9, padding=0, around_center=True):
     """
     Find a bounding box around the largest connected
     component in a thresholded segmentation
@@ -50,6 +51,9 @@ def bbox_from_segmentation(segm, threshold=0.9, padding=0):
     - segm : segmentation of shape (height, width)
     - threshold : threshold to apply to the segmentation
     - padding : pad the box by this amount of pixels on each side
+    - around_center : If true, the center of mass of the segmentation
+                      will be used as the center for the bounding box
+                      with sides padding x padding
 
     # Returns
     - x, y, width, height bounding box coordinates
@@ -65,6 +69,14 @@ def bbox_from_segmentation(segm, threshold=0.9, padding=0):
     largest = np.argmax([np.sum(labels == label)
                             for label in range(1, num_labels+1)])
     segm = labels == largest + 1
+    
+    if around_center:
+        y_center, x_center = center_of_mass(segm)
+        pad = padding / 2
+        side = padding*2
+        x = int(round(x_center-pad))
+        y = int(round(y_center-pad))
+        return x, y, side, side
 
     # we find the top-left coordinate by finding the first
     # column and row with a 1
