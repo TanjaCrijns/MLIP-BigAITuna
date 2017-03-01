@@ -12,12 +12,17 @@ from scipy.ndimage.measurements import center_of_mass
 
 from preprocess import load_image
 
-def get_bounding_boxes(bbox_folder):
+def get_bounding_boxes(bbox_folder, resize=None, data_folder=''):
     """
     Read bounding boxes from json files created by Sloth
 
     # Params
     - bbox_folder : folder containing json files with bounding boxes
+    - resize : None or tuple (height, width). If set, the bounding box
+               will be rescaled to this size.
+    - data_folder: If resize is not None, this folder will be used for
+                   getting the size of each image. This should be the
+                   original training data.
 
     # Returns
     - A dictionary mapping filename to a list of bounding boxes
@@ -33,6 +38,14 @@ def get_bounding_boxes(bbox_folder):
             for image in data:
                 img_name = os.path.basename(image['filename'])
                 for annot in image['annotations']:
+                    x, y, width, height = annot['x'], annot['y'], annot['width'], annot['height']
+                    label = annot['class']
+                    img = load_image(os.path.join(data_folder, label, img_name))
+                    size = np.array(img.shape[:2])
+                    aspect = size.astype(np.float32) / np.array(resize).astype(np.float32)
+                    x, width = x/aspect[1], width/aspect[1]
+                    y, height = y/aspect[1], height/aspect[1]
+
                     # make sure that coordinates are valid
                     bbox = (max(0, int(round(annot['x']))),
                             max(0, int(round(annot['y']))),
@@ -63,7 +76,7 @@ def bbox_from_segmentation(segm, threshold=0.9, padding=0, around_center=False):
     if num_labels == 0:
         # no bounding box found
         return
-    
+   
     # Zero is background, so we ignore it
     # But we do have to +1 to negate this after argmax
     largest = np.argmax([np.sum(labels == label)
