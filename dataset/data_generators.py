@@ -204,7 +204,7 @@ def get_data_with_bbox_coords(data_df, data_folder, bboxes, batch_size=32, shuff
     
     while True:
         data = zip(data_df.filename.values, data_df.label.values)
-        data = [(img, label) for img, label in data if img in bboxes]
+        data = [(img, label) for img, label in data if img in bboxes and len(bbox[img])!=0]
         n = len(data)
         if shuffle:
             data = np.random.permutation(data)
