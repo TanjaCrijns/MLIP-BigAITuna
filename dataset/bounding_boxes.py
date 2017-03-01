@@ -42,7 +42,7 @@ def get_bounding_boxes(bbox_folder):
                     bboxes[img_name].append(bbox)
     return bboxes
 
-def bbox_from_segmentation(segm, threshold=0.9, padding=0, around_center=True):
+def bbox_from_segmentation(segm, threshold=0.9, padding=0, around_center=False):
     """
     Find a bounding box around the largest connected
     component in a thresholded segmentation
@@ -76,6 +76,8 @@ def bbox_from_segmentation(segm, threshold=0.9, padding=0, around_center=True):
         side = padding*2
         x = int(round(x_center-pad))
         y = int(round(y_center-pad))
+        x = max(0, x)
+        y = max(0, y)
         return x, y, side, side
 
     # we find the top-left coordinate by finding the first
