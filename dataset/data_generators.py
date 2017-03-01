@@ -204,7 +204,7 @@ def get_data_with_bbox_coords(data_df, data_folder, bboxes, batch_size=32, shuff
     
     while True:
         data = zip(data_df.filename.values, data_df.label.values)
-        data = [(img, label) for img, label in data if img in bboxes and len(bbox[img])!=0]
+        data = [(img, label) for img, label in data if img in bboxes and len(bboxes[img])!=0]
         n = len(data)
         if shuffle:
             data = np.random.permutation(data)
@@ -221,8 +221,10 @@ def get_data_with_bbox_coords(data_df, data_folder, bboxes, batch_size=32, shuff
                 img_path = os.path.join(data_folder, label, img_name)
                 img = load_image(img_path)
                 
-                x, y, width, height = bboxes[img_name]
-
+                bbox = bboxes[img_name]
+                if len(bbox) == 5:
+                    bbox = bbox[:4]
+                x, y, width, height = bbox
                 # Make a mask from the bounding box, so we can apply
                 # data augmentation to it. Later we will convert it back
                 mask = np.zeros(img.shape[:2], dtype=np.uint8)
