@@ -85,10 +85,9 @@ def bbox_from_segmentation(segm, threshold=0.9, padding=0, around_center=False):
     
     if around_center:
         y_center, x_center = center_of_mass(segm)
-        pad = padding / 2
         side = padding*2
-        x = int(round(x_center-pad))
-        y = int(round(y_center-pad))
+        x = int(round(x_center-padding))
+        y = int(round(y_center-padding))
         x = max(0, x)
         y = max(0, y)
         return x, y, side, side
