@@ -12,7 +12,7 @@ from scipy.ndimage.measurements import center_of_mass
 
 from preprocess import load_image
 
-def get_bounding_boxes(bbox_folder, resize=None, data_folder=''):
+def get_bounding_boxes(bbox_folder, resize=None, data_folder='', include_class=False):
     """
     Read bounding boxes from json files created by Sloth
 
@@ -23,6 +23,7 @@ def get_bounding_boxes(bbox_folder, resize=None, data_folder=''):
     - data_folder: If resize is not None, this folder will be used for
                    getting the size of each image. This should be the
                    original training data.
+    - include_class : If true, the fifth number returned will be the class
 
     # Returns
     - A dictionary mapping filename to a list of bounding boxes
@@ -40,11 +41,12 @@ def get_bounding_boxes(bbox_folder, resize=None, data_folder=''):
                 for annot in image['annotations']:
                     x, y, width, height = annot['x'], annot['y'], annot['width'], annot['height']
                     label = annot['class']
-                    img = load_image(os.path.join(data_folder, label, img_name))
-                    size = np.array(img.shape[:2])
-                    aspect = size.astype(np.float32) / np.array(resize).astype(np.float32)
-                    x, width = x/aspect[1], width/aspect[1]
-                    y, height = y/aspect[1], height/aspect[1]
+                    if resize is not None:
+                        img = load_image(os.path.join(data_folder, label, img_name))
+                        size = np.array(img.shape[:2])
+                        aspect = size.astype(np.float32) / np.array(resize).astype(np.float32)
+                        x, width = x/aspect[1], width/aspect[1]
+                        y, height = y/aspect[1], height/aspect[1]
 
                     # make sure that coordinates are valid
                     bbox = (max(0, int(round(annot['x']))),
@@ -52,6 +54,8 @@ def get_bounding_boxes(bbox_folder, resize=None, data_folder=''):
                             int(round(annot['width'])),
                             int(round(annot['height'])),
                             annot['class'])
+                    if not include_class:
+                        bbox = bbox[:4]
                     bboxes[img_name].append(bbox)
     return bboxes
 
@@ -148,7 +152,7 @@ def get_largest_bbox(bboxes):
     """
     Get the largest bbox from a list of bboxes
     """
-    sq_size = [width*height for _, _, width, height, _ in bboxes]
+    sq_size = [bbox[2]*bbox[3] for bbox in bboxes]
     return bboxes[np.argmax(sq_size)]
 
 def largest_bbox_per_image(bboxes):

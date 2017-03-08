@@ -17,8 +17,9 @@ def load_image(path):
     return imread(path)
 
 def preprocess(image, target_size=(256, 256), augmentation=True, mask=None,
-               zero_center=False, scale=1., dim_ordering='th', 
-               to_bgr=False, flip=False, shift_x=0, shift_y=0, rot_range=0, elastic_trans=False):
+               zero_center=False, scale=1., dim_ordering='th',
+               to_bgr=False, flip=False, shift_x=0, shift_y=0, rot_range=0,
+               elastic_trans=False):
     """
     Preprocess an image, possibly with random augmentations and
     a mask with the same augmentations
@@ -32,7 +33,7 @@ def preprocess(image, target_size=(256, 256), augmentation=True, mask=None,
     - zero_center : zero center the image (naively)
     - scale : multiply each pixel value in the image by this value
     - dim_ordering : if 'th', transpose image to (channel, height, width)
-    - to_bgr : conver the image to BGR colorspace
+    - to_bgr : convert the image to BGR colorspace
     - flip : if True 50% chance of flipping the image horizontally
     - shift_x : randomly shift the image by this amount 
                 in pixels horizontally [-shift_x, shift_x]

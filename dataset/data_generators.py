@@ -7,7 +7,7 @@ from preprocess import *
 from dataset import labels
 from bounding_boxes import bbox_from_segmentation
 
-def get_data(data_df, data_folder, batch_size=32, shuffle=True, 
+def get_data(data_df, data_folder, batch_size=32, shuffle=True, bboxes=None,
              augmentation=True, img_size=(256, 256), **kwargs):
     """
     Generator to train a model on images.
@@ -18,6 +18,8 @@ def get_data(data_df, data_folder, batch_size=32, shuffle=True,
                     `data_folder/label/img_name`
     - batch_size : number of images per batch
     - shuffle : present images in random order (each epoch)
+    - bboxes : A dictionary img_name -> (x, y, width, height). If this
+               is given, the image will be cropped to this region.
     - augmentation : perform data augmentation
     - img_size : sample patches of this size from the image and mask
     - kwargs : passed to the preprocess function
@@ -45,6 +47,12 @@ def get_data(data_df, data_folder, batch_size=32, shuffle=True,
                 img_name, label = data[i + j]
                 img_path = os.path.join(data_folder, label, img_name)
                 img = load_image(img_path)
+                if bboxes is not None:
+                    if label == 'NoF':
+                        x, y, width, height = 0, 0, 256, 256
+                    else:
+                        x, y, width, height = bboxes[img_name]
+                    img = img[y:y+height, x:x+width]
                 
                 img = preprocess(img, target_size=img_size, 
                                 augmentation=augmentation, 
