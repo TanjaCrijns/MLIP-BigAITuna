@@ -40,11 +40,20 @@ def get_data(data_df, data_folder, batch_size=32, shuffle=True, bboxes=None,
         # Double to allow for larger batch sizes
         data += data
         i = 0
+        labelcount = np.zeros(8)
         while i < n:
             img_batch = np.zeros((batch_size, 3) + img_size, dtype=np.float32)
             label_batch = np.zeros((batch_size, n_classes), dtype=np.uint8)
-            for j in range(batch_size):
-                img_name, label = data[i + j]
+            j = 0
+            label_count = np.zeros(8)
+            while j < batch_size:
+                img_name, label = data[i]
+                i += 1
+                lab_nr = labels.index(label)
+                #print label_count
+                if label_count[lab_nr] >= batch_size / 7.0:
+                    continue
+                label_count[lab_nr] += 1
                 img_path = os.path.join(data_folder, label, img_name)
                 img = load_image(img_path)
                 if bboxes is not None:
@@ -58,10 +67,9 @@ def get_data(data_df, data_folder, batch_size=32, shuffle=True, bboxes=None,
                                 augmentation=augmentation, 
                                 zero_center=True, scale=1./255.,
                                 **kwargs)
-                
                 img_batch[j] = img
                 label_batch[j] = onehot(labels.index(label), 8)
-                i += 1
+                j += 1
             yield img_batch, label_batch
 
 def get_test_data(files, batch_size=4, img_size=(720, 1280), **kwargs):
