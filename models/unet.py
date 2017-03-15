@@ -134,7 +134,8 @@ def get_unet(input_shape=(3, 256, 256), optimizer=Adam(lr=1e-5),
     - task: either 'segm', 'label' or 'both'
     - loss_weights : weighting for losses
     """
-    losses = {'label': 'categorical_crossentropy', 'segm': weighted_loss({dice_coef_loss: 4., bin_cross: 1})}
+    losses = {'label': 'categorical_crossentropy', 'segm': weighted_loss({dice_coef_loss: 4.,
+                                                                          bin_cross: 1})}
     metrics = {'label': ['accuracy', 'categorical_crossentropy'],
                'segm': ['accuracy', dice_coef, bin_cross]}
 
