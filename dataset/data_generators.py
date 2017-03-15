@@ -4,10 +4,10 @@ import numpy as np
 from keras.utils.np_utils import to_categorical as onehot
 
 from preprocess import *
-from dataset import labels
+#from dataset import labels
 from bounding_boxes import bbox_from_segmentation
 
-def get_data(data_df, data_folder, batch_size=32, shuffle=True, bboxes=None,
+def get_data(data_df, data_folder, labels, batch_size=32, shuffle=True, bboxes=None,
              augmentation=True, img_size=(256, 256), **kwargs):
     """
     Generator to train a model on images.
@@ -60,7 +60,7 @@ def get_data(data_df, data_folder, batch_size=32, shuffle=True, bboxes=None,
                                 **kwargs)
                 
                 img_batch[j] = img
-                label_batch[j] = onehot(labels.index(label), 8)
+                label_batch[j] = onehot(labels.index(label), len(labels))
                 i += 1
             yield img_batch, label_batch
 
