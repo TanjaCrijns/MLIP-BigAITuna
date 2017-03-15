@@ -1,3 +1,5 @@
+from __future__ import division
+
 import os
 
 import numpy as np
@@ -16,6 +18,7 @@ def get_data(data_df, data_folder, labels, batch_size=32, shuffle=True, bboxes=N
     - data_df : DataFrame of filename and label for each image
     - data_folder : folder where data resides. Should have structure
                     `data_folder/label/img_name`
+    - labels : list of labels
     - batch_size : number of images per batch
     - shuffle : present images in random order (each epoch)
     - bboxes : A dictionary img_name -> (x, y, width, height). If this
@@ -50,7 +53,7 @@ def get_data(data_df, data_folder, labels, batch_size=32, shuffle=True, bboxes=N
                 img_name, label = data[i]
                 i += 1
                 lab_nr = labels.index(label)
-                #print label_count
+                
                 if label_count[lab_nr] >= batch_size / len(labels):
                     continue
                 label_count[lab_nr] += 1

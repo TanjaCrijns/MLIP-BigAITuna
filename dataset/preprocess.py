@@ -19,7 +19,7 @@ def load_image(path):
 def preprocess(image, target_size=None, augmentation=True, mask=None,
                zero_center=False, scale=1., dim_ordering='th',
                to_bgr=False, flip=False, shift_x=0, shift_y=0, rot_range=0,
-               elastic_trans=False, colorize=True):
+               elastic_trans=False, colorize=False):
     """
     Preprocess an image, possibly with random augmentations and
     a mask with the same augmentations
@@ -41,7 +41,9 @@ def preprocess(image, target_size=None, augmentation=True, mask=None,
                 in pixels vertically [-shift_x, shift_x]
     - rot_range : rotate the image uniformly by 
                   [-rot_range, rot_range] degrees
-    - elastic_transform : transform the image elastically 
+    - elastic_transform : transform the image elastically
+    - colorize : Apply histogram equalization with one of the 
+                 precalculated histograms
 
     # Returns
     - preprocessed image
@@ -58,7 +60,7 @@ def preprocess(image, target_size=None, augmentation=True, mask=None,
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         
     if mask is not None:
-            mask = cv2.resize(mask, cv2_imsize, interpolation=cv2.INTER_NEAREST)
+        mask = cv2.resize(mask, cv2_imsize, interpolation=cv2.INTER_NEAREST)
 
     
     if augmentation:
