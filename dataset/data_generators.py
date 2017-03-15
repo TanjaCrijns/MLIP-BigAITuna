@@ -95,7 +95,7 @@ def get_test_data(files, batch_size=4, img_size=(720, 1280), **kwargs):
     while True:
         batch = np.zeros((batch_size, 3) + img_size)
         for j in range(batch_size):
-            img = load_image(files[i + j])
+            img = load_image(files[i])
             img = preprocess(img, target_size=img_size, augmentation=False, 
                              zero_center=True, scale=1./255., **kwargs)
             batch[j] = img
@@ -145,7 +145,7 @@ def get_data_with_masks(data_df, bboxes, data_folder, batch_size=1,
             mask_batch = np.zeros((batch_size, 2) + img_size, dtype=np.uint8)
             label_batch = np.zeros((batch_size, n_classes), dtype=np.uint8)
             for j in range(batch_size):
-                img_name, label = data[i + j]
+                img_name, label = data[i]
                 img_path = os.path.join(data_folder, label, img_name)
                 img = load_image(img_path)
                 mask = np.zeros(img.shape[:2] + (2,), dtype=np.uint8)
@@ -236,7 +236,7 @@ def get_data_with_bbox_coords(data_df, data_folder, bboxes, batch_size=32, shuff
             img_batch = np.zeros((batch_size, 3) + img_size, dtype=np.float32)
             label_batch = np.zeros((batch_size, n_coords), dtype=np.int32)
             for j in range(batch_size):
-                img_name, label = data[i + j]
+                img_name, label = data[i]
                 img_path = os.path.join(data_folder, label, img_name)
                 img = load_image(img_path)
                 
