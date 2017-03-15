@@ -26,7 +26,8 @@ def preprocess(image, target_size=None, augmentation=True, mask=None,
 
     # Params
     - image : the image to preprocess
-    - target_size : tuple (height, width) to resize the image to
+    - target_size : tuple (height, width) to resize the image to,
+                    if None the image is not resized.
     - augmentation : Whether to augment the image
     - mask : if not None, perform same flips, shifts etc. to this mask.
              the mask will be resized to target_size
@@ -167,8 +168,10 @@ def histogram_colorization(target_hist, input_img, n_bins=255):
         normalized_img[:, :, i] = stain_lut
         
         hist_output = np.histogram(normalized_img[:, :, i], bins=np.linspace(0., 1., n_bins+1))[0]
-
-    return normalized_img
+    
+    # output is in range [0, 1], rescale to [0, 255]
+    # this may not be desirable in all cases
+    return normalized_img * n_bins
 
 def get_histogram_matching_lut(h_input, h_template):
     ''' h_input: histogram to transfrom, h_template: reference'''
