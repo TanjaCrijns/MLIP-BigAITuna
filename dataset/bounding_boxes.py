@@ -129,7 +129,7 @@ def visualize_bbox(img, bounding_box, segm=None, img_size=(1280, 720)):
     plt.figure(figsize=(10, 7))
     plt.imshow(img)
     if segm is not None:
-        plt.imshow(segm, alpha=0.5)
+        plt.imshow(segm, alpha=0.3)
     
     if bounding_box is not None:
         (x, y, width, height) = bounding_box
