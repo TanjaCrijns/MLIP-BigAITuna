@@ -16,10 +16,10 @@ def load_image(path):
     """
     return imread(path)
 
-def preprocess(image, target_size=(256, 256), augmentation=True, mask=None,
+def preprocess(image, target_size=None, augmentation=True, mask=None,
                zero_center=False, scale=1., dim_ordering='th',
                to_bgr=False, flip=False, shift_x=0, shift_y=0, rot_range=0,
-               elastic_trans=False):
+               elastic_trans=False, colorize=True):
     """
     Preprocess an image, possibly with random augmentations and
     a mask with the same augmentations
@@ -47,14 +47,32 @@ def preprocess(image, target_size=(256, 256), augmentation=True, mask=None,
     - preprocessed image
     - If specified: mask
     """
-    cv2_imsize = (target_size[1], target_size[0])
-    image = cv2.resize(image, cv2_imsize, interpolation=cv2.INTER_LINEAR)
+    image_size = image.shape
+    cv2_imsize = (image_size[1], image_size[0])
+    
+    if target_size is not None:
+        cv2_imsize = (target_size[1], target_size[0])
+        image = cv2.resize(image, cv2_imsize, interpolation=cv2.INTER_LINEAR)
+        
     if to_bgr:
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        
     if mask is not None:
-        mask = cv2.resize(mask, cv2_imsize, interpolation=cv2.INTER_NEAREST)
+            mask = cv2.resize(mask, cv2_imsize, interpolation=cv2.INTER_NEAREST)
 
+    
     if augmentation:
+        # histogram normalization
+        if colorize:
+            file_index = np.random.randint(5)
+            files = ['img_07419.txt', 'img_00230.txt', 'img_01384.txt', 'img_02487.txt', 'img_00726.txt']
+            target = np.loadtxt('../dataset/color normalization histograms/histogram_' + files[file_index])
+            target = target/target.sum()
+            target = target * cv2_imsize[1] * cv2_imsize[0] * 3
+            
+            image = histogram_colorization(target, image)
+        
+        
         # flip
         if flip and np.random.randint(2) == 1:
             image = np.fliplr(image)
@@ -68,7 +86,11 @@ def preprocess(image, target_size=(256, 256), augmentation=True, mask=None,
         image = cv2.warpAffine(image, M, cv2_imsize)
         if mask is not None:
             mask = cv2.warpAffine(mask, M, cv2_imsize)
-
+        
+        # elastic transform
+        if elastic_trans:
+            image = elastic_transform(image)
+        
         # rotate
         rot = np.random.uniform(-rot_range, rot_range)
         
@@ -78,13 +100,10 @@ def preprocess(image, target_size=(256, 256), augmentation=True, mask=None,
         if mask is not None:
             mask = cv2.warpAffine(mask, M, cv2_imsize)
         
-        # elastic transform
-        if elastic_trans:
-            image = elastic_transform(image)
-    
+
     if zero_center:
         image = image - 127 # naive zero-center
-    image = image.astype(np.float32) * scale
+        image = image.astype(np.float32) * scale
 
     if dim_ordering == 'th':
         image = image.transpose(2, 0, 1)
@@ -93,6 +112,7 @@ def preprocess(image, target_size=(256, 256), augmentation=True, mask=None,
 
     if mask is not None:
         return image, mask
+    
 
     return image
 
@@ -109,7 +129,7 @@ def elastic_transform(image):
     - the transformed image
     """
         
-    ran = np.random.randint(6)
+    ran = np.random.randint(4)
     alpha = image.shape[1] * ran
     sigma = image.shape[1] * 0.08
     alpha_affine = image.shape[1] * 0.08
@@ -133,3 +153,30 @@ def elastic_transform(image):
     indices = np.reshape(y+dy, (-1, 1)), np.reshape(x+dx, (-1, 1)), np.reshape(z, (-1, 1))
 
     return map_coordinates(image, indices, order=1, mode='reflect').reshape(shape)
+
+def histogram_colorization(target_hist, input_img, n_bins=255):
+    input_img = input_img/float(n_bins)
+    
+    normalized_img = np.zeros_like(input_img)
+    for i in [0, 1, 2]:
+        hist_input = np.histogram(input_img[:, :, i], bins=np.linspace(0., 1., n_bins+1))[0]
+        LUT, _, _ = get_histogram_matching_lut(hist_input, np.round(target_hist[i]).astype(np.int))
+        stain_lut = LUT[(input_img[:, :, i] * (n_bins-1)).astype(int)].astype(float) / float(n_bins)
+        normalized_img[:, :, i] = stain_lut
+        
+        hist_output = np.histogram(normalized_img[:, :, i], bins=np.linspace(0., 1., n_bins+1))[0]
+
+    return normalized_img
+
+def get_histogram_matching_lut(h_input, h_template):
+    ''' h_input: histogram to transfrom, h_template: reference'''
+    
+    if len(h_input) != len(h_template):
+        print 'histograms length mismatch!'
+        return False
+    
+    H_input = np.cumsum(h_input)
+    H_template = np.cumsum(h_template)
+    LUT = np.array([np.argmin(np.abs(i - H_template)) for i in H_input])
+
+    return LUT,H_input,H_template
