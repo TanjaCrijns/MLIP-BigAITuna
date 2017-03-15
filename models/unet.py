@@ -38,9 +38,9 @@ def dice_coef_loss(y_true, y_pred):
     return 1 - dice_coef(y_true, y_pred)
 
 def bin_cross(y_true, y_pred):
-    y_true = K.flatten(y_true)
-    y_pred = K.flatten(y_pred)
-    return K.sum(binary_crossentropy(y_true, y_pred))
+    y_true_f = K.flatten(y_true[:, 1, :, :])
+    y_pred_f = K.flatten(y_pred[:, 1, :, :])
+    return K.sum(binary_crossentropy(y_true_f, y_pred_f))
 
 def conv_bn_relu(inputs, n_filters, init):
     """
@@ -99,11 +99,30 @@ def add_unet_block_exp(inputs, bridge, n_filters, init):
 
     return conv2
 
+def weighted_loss(losses):
+    """
+    Creates a single weighted loss function
+
+    # Params
+    - losses : a dictionary of (loss_function -> float),
+    
+    # Returns
+    - A function taking y_true and y_pred that returns a weighted
+      sum of the given losses.
+    """
+    def loss_func(y_true, y_pred):
+        loss = 0
+        for func, w in losses.items():
+            loss += w * func(y_true, y_pred)
+        return loss
+
+    return loss_func
+
 def get_unet(input_shape=(3, 256, 256), optimizer=Adam(lr=1e-5), 
               init='glorot_uniform', task='both',
               loss_weights=None):
     """
-    U-net with batchnorm and (possible) 2 heads
+    U-net with batchnorm and (possibly) 2 heads
     https://arxiv.org/abs/1505.04597
 
     # Params
@@ -115,14 +134,16 @@ def get_unet(input_shape=(3, 256, 256), optimizer=Adam(lr=1e-5),
     - task: either 'segm', 'label' or 'both'
     - loss_weights : weighting for losses
     """
-    losses = {'label': 'categorical_crossentropy', 'segm': dice_coef_loss}
+    losses = {'label': 'categorical_crossentropy', 'segm': weighted_loss({dice_coef_loss: 4., bin_cross: 1})}
     metrics = {'label': ['accuracy', 'categorical_crossentropy'],
-               'segm': ['accuracy', dice_coef]}
+               'segm': ['accuracy', dice_coef, bin_cross]}
 
     inputs = Input(input_shape)
 
+    bn1 = BatchNormalization(axis=1)(inputs)
+
     # Contraction
-    conv1, pool = add_unet_block_cont(inputs, 32, init)
+    conv1, pool = add_unet_block_cont(bn1, 32, init)
     conv2, pool = add_unet_block_cont(pool, 64, init)
     conv3, pool = add_unet_block_cont(pool, 128, init)
     conv4, pool = add_unet_block_cont(pool, 256, init)
@@ -151,7 +172,7 @@ def get_unet(input_shape=(3, 256, 256), optimizer=Adam(lr=1e-5),
         conv10 = Convolution2D(2, 1, 1, init=init)(conv9)
         if None not in input_shape:
             # This doesn't work when input_shape isn't fully defined
-            # Either to dit manually in numpy or fully
+            # Either do it manually in numpy or fully
             # specify the input shape
             conv10 = Permute((2, 3, 1))(conv10)
             conv10 = Reshape((-1, 2))(conv10)

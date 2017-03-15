@@ -1,5 +1,6 @@
 data/
 !data/validation/*.csv
+!data/validation_FishNoFish/*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
