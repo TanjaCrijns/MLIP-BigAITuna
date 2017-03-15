@@ -40,18 +40,18 @@ def get_data(data_df, data_folder, labels, batch_size=32, shuffle=True, bboxes=N
         # Double to allow for larger batch sizes
         data += data
         i = 0
-        labelcount = np.zeros(8)
+        labelcount = np.zeros(len(labels))
         while i < n:
             img_batch = np.zeros((batch_size, 3) + img_size, dtype=np.float32)
             label_batch = np.zeros((batch_size, n_classes), dtype=np.uint8)
             j = 0
-            label_count = np.zeros(8)
+            label_count = np.zeros(len(labels))
             while j < batch_size:
                 img_name, label = data[i]
                 i += 1
                 lab_nr = labels.index(label)
                 #print label_count
-                if label_count[lab_nr] >= batch_size / 7.0:
+                if label_count[lab_nr] >= batch_size / len(labels):
                     continue
                 label_count[lab_nr] += 1
                 img_path = os.path.join(data_folder, label, img_name)
