@@ -134,8 +134,8 @@ def elastic_transform(image):
         
     ran = np.random.randint(4)
     alpha = image.shape[1] * ran
-    sigma = image.shape[1] * 0.08
-    alpha_affine = image.shape[1] * 0.08
+    sigma = image.shape[1] * 0.2
+    alpha_affine = image.shape[1] * 0.035
     random_state = np.random.RandomState(None)
 
     shape = image.shape
@@ -147,10 +147,15 @@ def elastic_transform(image):
     pts2 = pts1 + random_state.uniform(-alpha_affine, alpha_affine, size=pts1.shape).astype(np.float32)
     M = cv2.getAffineTransform(pts1, pts2)
     image = cv2.warpAffine(image, M, shape_size[::-1], borderMode=cv2.BORDER_REFLECT_101)
-
-    dx = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma) * alpha
-    dy = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma) * alpha
-    dz = np.zeros_like(dx)
+    
+    blur_size = int(4*sigma) | 1
+    
+    #Blur at half resolution
+    dx = cv2.GaussianBlur(image[::4,::4], ksize=(blur_size, blur_size), sigmaX=sigma)
+    dy = cv2.GaussianBlur(image[::4,::4], ksize=(blur_size, blur_size), sigmaX=sigma)
+    
+    dx = cv2.resize(dx, dsize=(dx.shape[0]*4, dx.shape[1]*4)).transpose(1,0,2)
+    dy = cv2.resize(dy, dsize=(dy.shape[0]*4, dy.shape[1]*4)).transpose(1,0,2)
 
     x, y, z = np.meshgrid(np.arange(shape[1]), np.arange(shape[0]), np.arange(shape[2]))
     indices = np.reshape(y+dy, (-1, 1)), np.reshape(x+dx, (-1, 1)), np.reshape(z, (-1, 1))
