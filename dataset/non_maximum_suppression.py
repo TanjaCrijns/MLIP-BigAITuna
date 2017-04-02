@@ -18,8 +18,8 @@ def non_max_suppression_fast(boxes, overlapThresh):
     # get the top-left and bottom-right coordinates of the bounding boxes
     x1 = boxes[:,0]
     y1 = boxes[:,1]
-    x2 = [boxes[i,0] + j for i,j in enumerate(boxes[:,2])]
-    y2 = [boxes[i,1] + j for i,j in enumerate(boxes[:,3])]
+    x2 = np.array([boxes[i,0] + j for i,j in enumerate(boxes[:,2])])
+    y2 = np.array([boxes[i,1] + j for i,j in enumerate(boxes[:,3])])
 
     # compute the area of the bounding boxes and sort the bounding
     # boxes by the bottom-right y-coordinate of the bounding box
