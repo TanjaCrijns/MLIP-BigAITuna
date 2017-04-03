@@ -57,7 +57,7 @@ class PatchFlip(Augmenter):
 class PatchRotate90(Augmenter):
 
     def __init__(self, k_list):
-        super(PatchRotate90, self).__init__('rotate')
+        super(PatchRotate90, self).__init__('rotate90')
         # K is the parameter that regulates the amount of rotations done.
         self.k_list = k_list
         self.__k = None
@@ -98,22 +98,44 @@ class PatchRotate(Augmenter):
                                                   self.angle_range)
 
 
-class PatchBlur(PatchAugmenter):
+class PatchBlur(Augmenter):
 
     def __init__(self, sigma_range):
+        # Sigma_range should be a tuple (a, b) to indicate the range
         super(PatchBlur, self).__init__('blur')
         self.sigma_range = sigma_range
         self.__sigma = None
 
     def augment(self, patch, label=None):
-        t_patch = snf.gaussian_filter(patch, (0, 0),
-                                      self.__sigma, self.__sigma)
+        t_patch = snf.gaussian_filter(patch, (0.0,
+                                              self.__sigma,
+                                              self.__sigma))
         return t_patch, label
+
+    def randomize(self):
+        self.__sigma = np.random.uniform(self.sigma_range[0],
+                                         self.sigma_range[1])
+
+class PatchGamma(Augmenter):
+
+    def __init__(self, gamma_interval):
+        super(PatchGamma, self).__init__('gamma')
+        self.gamma_interval = gamma_interval
+        self.__gamma = None
+
+    def augment(self, patch, label=None):
+        t_patch = np.rint(np.power(patch.astype(np.float32) / 255.0,
+                          self.__gamma) * 255.0).astype(np.uint8)
+        return t_patch, label
+
+    def randomize(self):
+        self.__gamma = np.random.uniform(self.gamma_interval[0],
+                                         self.gamma_interval[1])
 
 if __name__ == '__main__':
     example_image = spm.imread('../data/train/YFT/img_03596.jpg')
     example_image = example_image.transpose(2, 0, 1)
-    augmenter = PatchRotate(25)
+    augmenter = PatchGamma((0.1, 0.9))
     augmenter.randomize()
     example, _ = augmenter.augment(example_image)
     example = example.transpose(1, 2, 0)
