@@ -62,12 +62,24 @@ def get_data(data_df, data_folder, labels, batch_size=32, shuffle=True, bboxes=N
                 img_path = os.path.join(data_folder, label, img_name)
                 img = load_image(img_path)
                 if bboxes is not None:
-                    if label == 'NoF':
-                        x, y, width, height = 0, 0, 256, 256
-                    else:
-                        x, y, width, height = bboxes[img_name]
+                    if img_name in bboxes:
+                        boxes = bboxes[img_name]
+                        if isinstance(boxes, list):
+                            # if we have a list of boxes, choose a box at random
+                            box_idx = np.random.randint(len(boxes))
+                            x, y, width, height = boxes[box_idx]
+                        else:
+                            # otherwise it already is just 1 box
+                            x, y, width, height = boxes
+                    else :
+                        # no bounding box found, choose random box
+                        x = np.random.randint(img.shape[1] - 256)
+                        y = np.random.randint(img.shape[0] - 256)
+                        height, width = img_size
+
+                    # Crop the image to the bounding box
+                    x, y, width, height = [int(n) for n in [x, y, width, height]]
                     img = img[y:y+height, x:x+width]
-                
                 img = preprocess(img, target_size=img_size, 
                                 augmentation=augmentation, 
                                 zero_center=True, scale=1./255.,
