@@ -106,7 +106,7 @@ def preprocess(image, target_size=None, augmentation=True, mask=None,
 
     if zero_center:
         image = image - 127 # naive zero-center
-        image = image.astype(np.float32) * scale
+    image = image.astype(np.float32) * scale
 
     if dim_ordering == 'th':
         image = image.transpose(2, 0, 1)
