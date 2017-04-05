@@ -3,7 +3,7 @@ from __future__ import division
 import os
 
 import numpy as np
-from keras.utils.np_utils import to_categorical as onehot
+from preprocess import to_categorical as onehot
 
 from preprocess import *
 from dataset import labels
