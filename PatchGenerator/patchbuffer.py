@@ -3,26 +3,26 @@ import threading
 
 class PatchBuffer(object):
 	def __init__(self, patch_shape, label_shape, cache_size, mode = 'ring'):
-		'''
-		'''
+		"""
+		"""
 		
 		super(PatchBuffer, self).__init__()
-		
+
 		self._mode = mode
 		self._read_index = 0
-        self._write_index = 0
-        self._buffer_size = cache_size
+		self._write_index = 0
+		self._buffer_size = cache_size
 		self._patch_buffer = None
 		self._label_buffer = None
-		
+
 		
 		self._allocate_space(patch_shape, label_shape, cache_size)
-		self._set_mode(mode)
+		self._apply_mode()
 		self._buffer_lock = threading.Lock()
 		
 	def _allocate_space(self, patch_shape, label_shape, cache_size):
-		'''
-		'''
+		"""
+		"""
 		if patch_shape[0] <= 0 or patch_shape[1] <= 0:
 			raise ValueError('Invalid patch shape ({},{})'.format(patch_shape[0], patch_shape[1]))
 		
@@ -32,15 +32,16 @@ class PatchBuffer(object):
 		else:
 			self._label_buffer = np.zeros((cache_size,), dtype=np.uint8)
 			
-	def _apply_mode(self, mode):
-		'''
-		'''
-		#tbd: random mode
+	def _apply_mode(self):
+		"""
+		"""
+		if self._mode == 'random':
+			raise NotImplementedError('random mode not implemented yet')
 		
 		
 	def get_batch(self, patch_count):
-		'''
-		'''
+		"""
+		"""
 		self._buffer_lock.acquire()
 		
 		if self._mode == 'random':
@@ -58,8 +59,8 @@ class PatchBuffer(object):
 		return patches, labels, indices
 		
 	def push_patches(self, patches, labels):
-		'''
-		'''
+		"""
+		"""
 		self._buffer_lock.acquire()
 		
 		if self._mode == 'random':
