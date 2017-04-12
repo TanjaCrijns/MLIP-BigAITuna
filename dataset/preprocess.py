@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-from scipy.misc import imread
 from scipy.ndimage.interpolation import map_coordinates
 from scipy.ndimage.filters import gaussian_filter
 
@@ -33,9 +32,9 @@ def load_image(path):
     - path : the path of the image file
 
     # Returns
-    The image as a numpy array of ints of hape (height, width)
+    The image as a numpy array of ints of shape (height, width)
     """
-    return imread(path)
+    return cv2.imread(path, cv2.IMREAD_COLOR)[:, :, ::-1]
 
 def preprocess(image, target_size=None, augmentation=True, mask=None,
                zero_center=False, scale=1., dim_ordering='th',
